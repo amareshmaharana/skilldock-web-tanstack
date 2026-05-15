@@ -1,0 +1,92 @@
+import {
+  HeadContent,
+  Scripts,
+  createRootRouteWithContext,
+} from "@tanstack/react-router";
+import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { TanStackDevtools } from "@tanstack/react-devtools";
+
+import { ClerkProvider } from '@clerk/tanstack-react-start'
+
+import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
+
+import appCss from "../styles.css?url";
+
+import type { QueryClient } from "@tanstack/react-query";
+import Navbar from "#/components/Navbar";
+import Crosshair from "#/components/Crosshair";
+
+interface MyRouterContext {
+  queryClient: QueryClient;
+}
+
+export const Route = createRootRouteWithContext<MyRouterContext>()({
+  head: () => ({
+    meta: [
+      {
+        charSet: "utf-8",
+      },
+      {
+        name: "viewport",
+        content: "width=device-width, initial-scale=1",
+      },
+      {
+        title: "SkillDock | The Registry for Agentic Intelligence",
+      },
+      {
+        name: "description",
+        content:
+          "SkillDock is a registry for agentic intelligence, providing a platform to discover, share, and collaborate on AI agents and their capabilities. Our mission is to foster innovation and collaboration in the AI community by creating a centralized hub for agentic intelligence resources.",
+      },
+    ],
+    links: [
+      {
+        rel: "stylesheet",
+        href: appCss,
+      },
+    ],
+  }),
+  shellComponent: RootDocument,
+});
+
+function RootDocument({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        {/* <script dangerouslySetInnerHTML={{__html: THEME_INIT_SCRIPT}} /> */}
+        <HeadContent />
+      </head>
+      <body className="font-sans antialiased wrap-anywhere">
+        <ClerkProvider>
+          <div id="root-layout">
+            <header>
+              <div className="frame">
+                <Navbar />
+                <Crosshair />
+                <Crosshair />
+              </div>
+            </header>
+
+            <main>
+              <div className="frame">{children}</div>
+            </main>
+          </div>
+
+          <TanStackDevtools
+            config={{
+              position: "bottom-right",
+            }}
+            plugins={[
+              {
+                name: "Tanstack Router",
+                render: <TanStackRouterDevtoolsPanel />,
+              },
+              TanStackQueryDevtools,
+            ]}
+          />
+        </ClerkProvider>
+        <Scripts />
+      </body>
+    </html>
+  );
+}
