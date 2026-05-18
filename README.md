@@ -13,17 +13,18 @@
 
 ## Overview
 
-SkillDock is a TanStack Start application for browsing AI agent skills, workflows, and reusable capability packages. The current version focuses on the product foundation: a polished landing experience, reusable skill cards, Clerk-powered authentication screens, analytics instrumentation, and Firebase Data Connect schema groundwork for the future registry backend.
+SkillDock is a TanStack Start application for browsing AI agent skills, workflows, and reusable capability packages. The current version focuses on the product foundation: a polished landing experience, reusable skill cards, Clerk-powered authentication screens, analytics instrumentation, and Firebase Data Connect-powered registry reads.
 
-The app is intentionally small and focused right now. Static sample data powers the public registry preview while the backend data model and GraphQL operations are being prepared in `dataconnect/`.
+The home page now loads skills through a TanStack Start server function backed by the generated Firebase Data Connect JavaScript SDK. Static sample data remains in the repo for development/reference, but the primary registry preview path is wired to Data Connect.
 
 ## ✨ Current Features
 
 - **Agent capability landing page** with branded messaging and registry calls to action.
+- **Data-backed skill preview** using a public `GetSkills` Data Connect query and a TanStack Start loader.
 - **Reusable skill cards** with author metadata, category labels, install commands, copy-to-clipboard behavior, and placeholder engagement actions.
 - **Clerk authentication shell** with sign-in, sign-up, signed-in user button, and signed-out navigation state.
 - **PostHog analytics integration** for manual page view tracking and skill interaction events.
-- **Firebase Data Connect foundation** with `User` and `Skill` schema definitions plus starter read/insert GraphQL operations.
+- **Firebase Data Connect foundation** with `User` and `Skill` schema definitions, connector queries, and generated TypeScript SDK output.
 - **Responsive dark UI** built with Tailwind CSS v4 and app-level design tokens.
 - **TanStack developer tooling** for Router and Query debugging during development.
 
@@ -36,7 +37,7 @@ The app is intentionally small and focused right now. Static sample data powers 
 | Styling | Tailwind CSS v4, tw-animate-css |
 | Auth | Clerk, `@clerk/tanstack-react-start` |
 | Analytics | PostHog |
-| Data foundation | Firebase Data Connect |
+| Data | Firebase Data Connect, generated JavaScript SDK |
 | State/query tools | TanStack Query |
 | Icons | lucide-react |
 | Quality | Biome, Vitest |
@@ -53,18 +54,22 @@ skilldock/
 │   ├── User_insert.gql         # Starter user create mutation
 │   ├── User_read.gql           # Starter user read query
 │   ├── dataconnect.yaml        # Data Connect service config
-│   └── example/connector.yaml  # Connector config
+│   └── connectors/
+│       ├── connector.yaml      # SDK generation config
+│       └── queries.gql         # Public GetSkills query
 ├── public/                     # Static app assets and manifest
 ├── src/
 │   ├── components/
 │   │   ├── Crosshair.tsx
 │   │   ├── Navbar.tsx
 │   │   └── SkillCard.tsx
+│   ├── dataconnect-generated/  # Generated Firebase Data Connect SDK
 │   ├── integrations/
 │   │   ├── posthog/provider.tsx
 │   │   └── tanstack-query/
 │   ├── lib/
 │   │   ├── dummy-skill.ts
+│   │   ├── firebase.ts
 │   │   └── utils.ts
 │   ├── routes/
 │   │   ├── __auth/sign-in.$.tsx
@@ -111,16 +116,13 @@ VITE_PUBLIC_POSTHOG_KEY=
 VITE_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
 
 # Firebase
-FIREBASE_PROJECT_ID=
-FIREBASE_APP_ID=
-FIREBASE_API_KEY=
-FIREBASE_PRIVATE_KEY_ID=
-FIREBASE_PRIVATE_KEY=
-FIREBASE_CLIENT_EMAIL=
-FIREBASE_CLIENT_ID=
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_APP_ID=
 ```
 
-**Note:** ```Do not commit local environment files. `.env` is already ignored by Git.```
+**Note:** Do not commit local environment files. `.env` is already ignored by Git.
 
 ### Run Locally
 
@@ -164,6 +166,8 @@ PostHog is wired through `src/integrations/posthog/provider.tsx`.
 Tracked behavior currently includes:
 
 - Manual page view events on TanStack Router navigation.
+- `browse_registry_clicked` when the hero registry CTA is clicked.
+- `publish_skill_clicked` when the hero publish CTA is clicked.
 - `install_command_copied` when a skill install command is copied.
 - `skill_opened` when a skill card open action is clicked.
 
@@ -171,12 +175,19 @@ Page view autocapture is disabled so route changes can be tracked intentionally 
 
 ## 🔥 Firebase Data Connect
 
-The backend foundation lives in `dataconnect/`.
+The backend foundation lives in `dataconnect/`, with generated client code in `src/dataconnect-generated/`.
 
 Current schema:
 
 - `User` keyed by Clerk ID.
 - `Skill` records with author relationship, title, description, tags, install command, prompt config, usage example, and creation timestamp.
+
+Current app integration:
+
+- `src/lib/firebase.ts` initializes the Firebase app from `VITE_FIREBASE_*` environment variables.
+- `src/routes/index.tsx` defines `getSkillsFn` with `createServerFn`.
+- `getSkillsFn` calls the generated `getSkills` SDK function with `searchTerm` and `limit` variables.
+- `src/components/SkillCard.tsx` consumes the generated `GetSkillsData["skills"][number]` type.
 
 Important files:
 
@@ -184,15 +195,18 @@ Important files:
 | --- | --- |
 | `dataconnect/schema/schema.gql` | Source schema for Data Connect. |
 | `dataconnect/dataconnect.yaml` | Service, location, Cloud SQL, and connector configuration. |
+| `dataconnect/connectors/connector.yaml` | SDK generation target for `@dataconnect/generated`. |
+| `dataconnect/connectors/queries.gql` | Public `GetSkills` query used by the home page. |
 | `firebase.json` | Emulator config with Data Connect data stored under `dataconnect/.dataconnect/pgliteData`. |
 | `dataconnect/*_read.gql` | Starter read operations. |
 | `dataconnect/*_insert.gql` | Starter insert operations. |
+| `src/dataconnect-generated/` | Generated SDK package consumed through `@dataconnect/generated`. |
 
-Generated local emulator artifacts under `dataconnect/.dataconnect/` should remain ignored.
+Local emulator artifacts under `dataconnect/.dataconnect/` should remain ignored. The generated SDK under `src/dataconnect-generated/` is part of the current app dependency graph because `package.json` references it as `@dataconnect/generated`.
 
 ## 🧩 Skill Data Model
 
-The frontend currently renders static sample skills from `src/lib/dummy-skill.ts`.
+The frontend now renders skills from the generated Data Connect `GetSkills` query. The older static sample data still exists in `src/lib/dummy-skill.ts` for reference.
 
 ```ts
 interface SkillRecord {
@@ -209,12 +223,13 @@ interface SkillRecord {
 }
 ```
 
-This frontend model is expected to evolve as Firebase Data Connect becomes the source of truth.
+The generated SDK currently returns the shape consumed by `SkillCard`, including `id`, `title`, `description`, `tags`, `createdAt`, `installCommand`, and nested `author` data.
 
 ## 🛠️ Development Notes
 
 - Use the `#/*` import alias for source imports, for example `#/components/SkillCard`.
 - `src/routeTree.gen.ts` is generated by TanStack Router and should only be edited through route file changes.
+- `src/dataconnect-generated/` is generated by Firebase Data Connect and is referenced as the local `@dataconnect/generated` package.
 - The app currently has a home route plus Clerk auth routes. Some UI links already point toward future registry routes such as `/skills` and `/skills/new-skill`.
 - TanStack Router and Query devtools are enabled from the root shell during development.
 - Biome is the source of truth for formatting and linting.
@@ -233,7 +248,9 @@ Also verify:
 
 - Clerk keys are set for the target environment.
 - PostHog keys are set only when analytics should be active.
-- Firebase/Data Connect generated files are not committed.
+- Firebase client environment variables are set for the target environment.
+- Data Connect emulator artifacts under `dataconnect/.dataconnect/` are not committed.
+- The generated SDK in `src/dataconnect-generated/` is up to date with the connector query definitions.
 - Placeholder routes are either implemented or intentionally hidden before production.
 
 ## 🗺️ Roadmap
@@ -241,7 +258,7 @@ Also verify:
 - Registry listing route with search, filters, and pagination.
 - Skill detail pages with full metadata and usage examples.
 - Authenticated skill publishing flow.
-- Data Connect-backed reads and writes.
+- Data Connect-backed writes and publishing workflows.
 - User dashboards for authored, saved, and recently viewed skills.
 - Real upvotes, bookmarks, and discussion counts.
 - Production deployment configuration.
