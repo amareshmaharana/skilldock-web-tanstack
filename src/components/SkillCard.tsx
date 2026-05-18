@@ -7,28 +7,34 @@ import {
   Copy,
   MessageSquare,
 } from "lucide-react";
-import { useState } from "react";
 import { usePostHog } from "posthog-js/react";
+import { useState } from "react";
+import type { GetSkillsData } from "#/dataconnect-generated";
 
-interface SkillCardProps {
-  skill: SkillRecord;
-}
+type SkillCardProps = GetSkillsData["skills"][number];
 
-const SkillCard = ({ skill }: SkillCardProps) => {
+const SkillCard = ({
+  createdAt,
+  description,
+  installCommand,
+  tags,
+  title,
+  author,
+}: SkillCardProps) => {
   const [copied, setCopied] = useState(false);
   const posthog = usePostHog();
 
-  const category = skill.tags[0] ?? "General";
+  const category = tags[0] ?? "General";
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(skill.installCommand);
+      await navigator.clipboard.writeText(installCommand);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       posthog.capture("install_command_copied", {
-        skill_title: skill.title,
+        skill_title: title,
         skill_category: category,
-        install_command: skill.installCommand,
+        install_command: installCommand,
       });
     } catch {
       setCopied(false);
@@ -40,7 +46,7 @@ const SkillCard = ({ skill }: SkillCardProps) => {
       <Link
         to="/skills"
         tabIndex={-1}
-        aria-label={`Open ${skill.title}`}
+        aria-label={`Open ${title}`}
         className="overlay"
       />
 
@@ -59,35 +65,35 @@ const SkillCard = ({ skill }: SkillCardProps) => {
         <div className="meta">
           <div className="author">
             <img
-              src="/logo512.png"
-              alt={`${skill.title} logo`}
+              src={author.imageUrl || "/logo512.png"}
+              alt={`${author.username} avatar`}
               className="avatar"
             />
             <div className="author-copy">
-              <p>{skill.authorEmail}</p>
+              <p>{author.username}</p>
               <p>
-                {skill.createdAt
-                  ? new Date(skill.createdAt).toLocaleDateString()
+                {createdAt
+                  ? new Date(createdAt).toLocaleDateString()
                   : "Unknown date"}
               </p>
             </div>
           </div>
 
-          <p className="category">{skill.category}</p>
+          <p className="category">{category}</p>
         </div>
 
         <div className="summary">
           <Link to="/skills" className="title-link">
-            <h3>{skill.title}</h3>
+            <h3>{title}</h3>
           </Link>
 
-          <p>{skill.description}</p>
+          <p>{description}</p>
         </div>
 
         <div className="command">
           <div className="command-copy">
             <span>{">_"}</span>
-            <p>{skill.installCommand}</p>
+            <p>{installCommand}</p>
           </div>
           <button
             type="button"
@@ -103,12 +109,12 @@ const SkillCard = ({ skill }: SkillCardProps) => {
           <div className="stats">
             <button type="button" className="upvote" disabled>
               <ArrowBigUp size={16} fill="currentColor" />
-              <span>{skill.tags.length}</span>
+              <span>{tags.length}</span>
             </button>
 
             <div className="comments">
               <MessageSquare size={14} />
-              <span>{skill.authorEmail ? 1 : 0}</span>
+              <span>{author.email ? 1 : 0}</span>
             </div>
           </div>
 
@@ -116,11 +122,11 @@ const SkillCard = ({ skill }: SkillCardProps) => {
             <Link
               to="/skills"
               className="open"
-              title={`Open ${skill.title}`}
+              title={`Open ${title}`}
               onClick={() =>
                 posthog.capture("skill_opened", {
-                  skill_title: skill.title,
-                  skill_category: skill.category,
+                  skill_title: title,
+                  skill_category: category,
                 })
               }
             >
