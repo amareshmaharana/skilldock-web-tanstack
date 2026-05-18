@@ -1,0 +1,17 @@
+# This is a file for you to write an un-named mutation. 
+# Only one un-named mutation is allowed per file.
+mutation {
+  skill_insert(
+    data: {
+      id: "11111111222233334444555555555552",
+      authorClerkId: "user_3DkgyxfffViqBw9zvVxb57nVrRt",
+      createdAt: "2026-05-18T06:32:10.085Z",
+      description: "Inspect logs, isolate failures, and suggest the fastest next check for runtime issues.",
+      installCommand: "npx skilldock add debug-trace",
+      promptConfig: "You are a Debug Trace skill. Your job is to help users inspect logs, isolate failures, and suggest the fastest next check for runtime issues. When a user asks for help, provide clear and concise instructions on how to proceed with debugging. Use your expertise to guide them through the troubleshooting process effectively.",
+      tags: ["debugging", "logs", "performance", "troubleshooting"],
+      title: "Debug Trace",
+      usageExample: "Performance issues? Use the Debug Trace skill to inspect logs and isolate failures quickly. Just ask, 'How can I debug this error?' and get step-by-step guidance to resolve runtime issues efficiently.",
+    }
+  )
+}
